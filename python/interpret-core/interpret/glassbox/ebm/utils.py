@@ -89,12 +89,17 @@ class EBMUtils:
 
     @staticmethod
     def ebm_train_test_split(
-        X, y, w, test_size, random_state, is_classification, is_train=True
+            X, y, w, test_size, random_state, is_classification, test_indices=None, is_train=True
     ):
         # all test/train splits should be done with this function to ensure that
         # if we re-generate the train/test splits that they are generated exactly
         # the same as before
-        if test_size == 0:
+        if test_indices is not None:
+            mask = np.zeros(X.shape[0], dtype=bool)
+            mask[test_indices] = 1
+            X_val, y_val, w_val = X[mask], y[mask], w[mask]
+            X_train, y_train, w_train = X[~mask], y[~mask], w[~mask]
+        elif test_size == 0:
             X_train, y_train, w_train = X, y, w
             X_val = np.empty(shape=(0, X.shape[1]), dtype=X.dtype)
             y_val = np.empty(shape=(0,), dtype=y.dtype)

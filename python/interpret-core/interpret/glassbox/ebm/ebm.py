@@ -406,7 +406,7 @@ class BaseCoreEBM:
         # Arguments for overall
         self.random_state = random_state
 
-    def fit_parallel(self, X, y, w, X_pair, n_classes):
+    def fit_parallel(self, X, y, w, X_pair, n_classes, val_indices):
         self.n_classes_ = n_classes
 
         # Split data into train/val
@@ -416,6 +416,7 @@ class BaseCoreEBM:
             y,
             w,
             test_size=self.validation_size,
+            test_indices=val_indices,
             random_state=self.random_state,
             is_classification=self.model_type == "classification",
         )
@@ -426,6 +427,7 @@ class BaseCoreEBM:
                 y,
                 w,
                 test_size=self.validation_size,
+                test_indices=val_indices,
                 random_state=self.random_state,
                 is_classification=self.model_type == "classification",
             )
@@ -714,7 +716,7 @@ class BaseEBM(BaseEstimator):
         self.max_bins = max_bins
         self.max_interaction_bins = max_interaction_bins
 
-    def fit(self, X, y, sample_weight=None):  # noqa: C901
+    def fit(self, X, y, sample_weight=None, validation_indices=None):  # noqa: C901
         """ Fits model to provided samples.
 
         Args:
@@ -869,11 +871,12 @@ class BaseEBM(BaseEstimator):
 
         provider = JobLibProvider(n_jobs=self.n_jobs)
 
-        def train_model(estimator, X, y, w, X_pair, n_classes):
-            return estimator.fit_parallel(X, y, w, X_pair, n_classes)
+        def train_model(estimator, X, y, w, X_pair, n_classes, val_indices):
+            return estimator.fit_parallel(X, y, w, X_pair, n_classes, val_indices)
 
         train_model_args_iter = (
-            (estimators[i], X, y, w, X_pair, n_classes) for i in range(self.outer_bags)
+            (estimators[i], X, y, w, X_pair, n_classes, validation_indices)
+            for i in range(self.outer_bags)
         )
 
         estimators = provider.parallel(train_model, train_model_args_iter)
